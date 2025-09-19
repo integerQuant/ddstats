@@ -1,0 +1,72 @@
+name: build-and-publish-pypi
+on:
+  push:
+    tags: ["v*.*.*"]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        py: ["3.9","3.10","3.11","3.12","3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+
+      - name: Install build NumPy
+        shell: bash
+        run: |
+          py="${{ matrix.py }}"
+          if   [[ "$py" == "3.9" ]]; then spec="==1.24.*"
+          elif [[ "$py" == "3.10" || "$py" == "3.11" || "$py" == "3.12" ]]; then spec="==1.26.*"
+          else spec=">=2.0"
+          fi
+          python -m pip install --upgrade pip
+          # NOTE: don't prepend '==' when using '>='
+          python -m pip install "numpy${spec}"
+
+      - name: Build wheels (maturin)
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release
+          manylinux: "2_28"
+
+      # Build a single sdist once (Linux, Python 3.11) so we have source on PyPI
+      - name: Build sdist (Linux Py3.11 only)
+        if: matrix.os == 'ubuntu-latest' && matrix.py == '3.11'
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out target/wheels
+          manylinux: "2_28"
+
+      - name: Upload wheels/sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-py${{ matrix.py }}
+          path: |
+            target/wheels/*.whl
+            target/wheels/*.tar.gz
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Collect dists
+        run: mkdir -p upload && find dist -name "*.whl" -o -name "*.tar.gz" -exec cp {} upload/ \;
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: upload

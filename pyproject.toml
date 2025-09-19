@@ -1,0 +1,25 @@
+[build-system]
+requires = ["maturin>=1.5"]
+build-backend = "maturin"
+
+[project]
+name = "ddstats"
+version = "0.0.5"
+description = "Fast drawdown & CED metrics in Rust with NumPy bindings"
+readme = "README.md"
+authors = [{ name = "Rodrigo" }]
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "numpy>=1.24; python_version<'3.11'",
+  "numpy>=1.26; python_version>='3.11' and python_version<'3.13'",
+  "numpy>=2.0;  python_version>='3.13'",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+include = ["ddstats.pyi", "py.typed"]

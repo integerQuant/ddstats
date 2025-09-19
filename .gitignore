@@ -1,0 +1,10 @@
+/target
+/target/
+/.venv/
+__pycache__/
+*.pyc
+/.maturin/
+/wheelhouse/
+/dist/
+/build/
+.DS_Store

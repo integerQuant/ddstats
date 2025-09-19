@@ -1,0 +1,18 @@
+[package]
+name = "ddstats"
+version = "0.0.5"
+edition = "2024"
+
+[lib]
+name = "ddstats"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.26.0", features = ["extension-module"] }
+numpy = "0.26.0"
+rayon = "1.11.0"
+ordered-float = "5" 
+
+[profile.release]
+lto = true
+codegen-units = 1
