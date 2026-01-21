@@ -27,10 +27,12 @@ jobs:
         shell: bash
         run: |
           py="${{ matrix.python-version }}"
-          if [[ "$py" == "3.10" || "$py" == "3.11" || "$py" == "3.12" ]]; then
+          if [[ "$py" == "3.9" ]]; then
+            spec="==1.24.*"
+          elif [[ "$py" == "3.10" || "$py" == "3.11" || "$py" == "3.12" ]]; then
             spec="==1.26.*"
           else
-            spec="==1.24.*"
+            spec=">=2.0"
           fi
           python -m pip install --upgrade pip
           python -m pip install "numpy${spec}" pytest pytest-cov maturin
