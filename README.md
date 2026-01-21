@@ -1,5 +1,8 @@
 # ddstats
 
+[![CI](https://github.com/integerQuant/ddstats/actions/workflows/ci.yml/badge.svg)](https://github.com/integerQuant/ddstats/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/ddstats.svg)](https://pypi.org/project/ddstats/)
+
 Fast drawdown & CED metrics in Rust with NumPy bindings.
 
 ## Overview
