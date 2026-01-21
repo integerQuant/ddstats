@@ -51,7 +51,7 @@
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
 use ordered_float::NotNan;
 use pyo3::prelude::*;
-use pyo3::{types::PyModule, Bound};
+use pyo3::{Bound, types::PyModule};
 use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::cmp::Reverse;
@@ -506,11 +506,7 @@ fn ced(
                 cnt += 1;
             }
         }
-        if cnt == 0 {
-            f64::NAN
-        } else {
-            sum / cnt as f64
-        }
+        if cnt == 0 { f64::NAN } else { sum / cnt as f64 }
     });
     Ok(val)
 }
