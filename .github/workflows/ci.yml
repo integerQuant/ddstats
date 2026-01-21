@@ -35,9 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "numpy${spec}" pytest pytest-cov maturin
 
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin --locked
-
       - name: Rust fmt
         run: cargo fmt --check
 
@@ -46,11 +43,6 @@ jobs:
 
       - name: Rust tests
         run: cargo test
-
-      - name: Rust coverage
-        env:
-          PYO3_NO_PYTHON: "1"
-        run: cargo tarpaulin --out Xml
 
       - name: Build Python wheel
         run: maturin build --release --out dist
@@ -66,5 +58,4 @@ jobs:
         with:
           name: coverage-${{ matrix.python-version }}
           path: |
-            cobertura.xml
             coverage.xml
