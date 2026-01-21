@@ -48,6 +48,8 @@ jobs:
         run: cargo test
 
       - name: Rust coverage
+        env:
+          PYO3_NO_PYTHON: "1"
         run: cargo tarpaulin --out Xml
 
       - name: Build Python wheel
