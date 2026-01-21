@@ -3,6 +3,8 @@ from typing import Literal
 from numpy.typing import NDArray
 import numpy as np
 
+__version__: str
+
 def max_drawdown(returns: NDArray[np.float64], /) -> float:
     """
     Compute the maximum drawdown (MDD).

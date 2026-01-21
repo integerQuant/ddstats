@@ -82,8 +82,12 @@ use std::collections::BinaryHeap;
 #[inline(always)]
 fn max_drawdown_core(rets: &[f64]) -> f64 {
     let n = rets.len();
-    if n == 0 { return f64::NAN; }
-    if rets.iter().any(|x| x.is_nan()) { return f64::NAN; }
+    if n == 0 {
+        return f64::NAN;
+    }
+    if rets.iter().any(|x| x.is_nan()) {
+        return f64::NAN;
+    }
 
     let mut cur_acc = 1.0_f64;
     let mut cur_max = 1.0_f64;
@@ -144,7 +148,9 @@ fn rolling_bounds(n: usize, window: usize, min_window: usize, step: usize) -> Ve
             (window, i - (window - min_window))
         };
         let end_i = start_i + i_window;
-        if end_i > n { break; }
+        if end_i > n {
+            break;
+        }
         bounds.push((start_i, end_i));
     }
     bounds
@@ -164,11 +170,18 @@ fn rolling_bounds(n: usize, window: usize, min_window: usize, step: usize) -> Ve
 ///
 /// # Notes
 /// - Returns `NaN` for any window that contains a `NaN`.
-fn rolling_max_drawdown_core(rets: &[f64], window: usize, min_window: usize, step: usize) -> Vec<f64> {
+fn rolling_max_drawdown_core(
+    rets: &[f64],
+    window: usize,
+    min_window: usize,
+    step: usize,
+) -> Vec<f64> {
     let n = rets.len();
     let bounds = rolling_bounds(n, window, min_window, step);
     let mut out = Vec::with_capacity(bounds.len());
-    for (s, e) in bounds { out.push(max_drawdown_core(&rets[s..e])); }
+    for (s, e) in bounds {
+        out.push(max_drawdown_core(&rets[s..e]));
+    }
     out
 }
 
@@ -177,7 +190,12 @@ fn rolling_max_drawdown_core(rets: &[f64], window: usize, min_window: usize, ste
 ///
 /// # Parallelism
 /// Each window is independent and mapped over `par_iter()`.
-fn rolling_max_drawdown_core_par(rets: &[f64], window: usize, min_window: usize, step: usize) -> Vec<f64> {
+fn rolling_max_drawdown_core_par(
+    rets: &[f64],
+    window: usize,
+    min_window: usize,
+    step: usize,
+) -> Vec<f64> {
     let n = rets.len();
     let bounds = rolling_bounds(n, window, min_window, step);
     bounds
@@ -208,8 +226,12 @@ fn rolling_max_drawdown_core_par(rets: &[f64], window: usize, min_window: usize,
 #[inline]
 fn quantile_linear(mut data: Vec<f64>, alpha: f64) -> f64 {
     let n = data.len();
-    if n == 0 || !(0.0..=1.0).contains(&alpha) { return f64::NAN; }
-    if data.iter().any(|x| x.is_nan()) { return f64::NAN; }
+    if n == 0 || !(0.0..=1.0).contains(&alpha) {
+        return f64::NAN;
+    }
+    if data.iter().any(|x| x.is_nan()) {
+        return f64::NAN;
+    }
     data.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
     let k = alpha * (n as f64 - 1.0);
     let lo = k.floor() as usize;
@@ -255,7 +277,9 @@ fn quantile_linear(mut data: Vec<f64>, alpha: f64) -> f64 {
 fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -> Vec<f64> {
     let n = rets.len();
     let mut out = vec![f64::NAN; n];
-    if n < t { return out; }
+    if n < t {
+        return out;
+    }
 
     let mdds: Vec<f64> = if parallel {
         rolling_max_drawdown_core_par(rets, t, t, 1)
@@ -273,9 +297,9 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
 
     // Rebalance heaps so that upper.len() == k
     let rebalance_to_k = |k: usize,
-                        lower: &mut BinaryHeap<NotNan<f64>>,
-                        upper: &mut BinaryHeap<Reverse<NotNan<f64>>>,
-                        sum_upper: &mut f64| {
+                          lower: &mut BinaryHeap<NotNan<f64>>,
+                          upper: &mut BinaryHeap<Reverse<NotNan<f64>>>,
+                          sum_upper: &mut f64| {
         while upper.len() > k {
             let Reverse(v) = upper.pop().unwrap();
             *sum_upper -= v.into_inner();
@@ -285,7 +309,9 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
             if let Some(v) = lower.pop() {
                 *sum_upper += v.into_inner();
                 upper.push(Reverse(v));
-            } else { break; }
+            } else {
+                break;
+            }
         }
     };
 
@@ -294,8 +320,13 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         let len_prefix = idx + 1;
 
         let v = mdds[idx];
-        if v.is_nan() { saw_nan = true; }
-        if saw_nan { out[a] = f64::NAN; continue; }
+        if v.is_nan() {
+            saw_nan = true;
+        }
+        if saw_nan {
+            out[a] = f64::NAN;
+            continue;
+        }
 
         let nv = NotNan::new(v).unwrap();
 
@@ -320,7 +351,9 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         // NumPy tail count: k = L - ceil(alpha*(L-1)), ensure k >= 1
         let hi = (alpha * ((len_prefix - 1) as f64)).ceil() as usize;
         let mut k = len_prefix.saturating_sub(hi);
-        if k == 0 { k = 1; }
+        if k == 0 {
+            k = 1;
+        }
 
         rebalance_to_k(k, &mut lower, &mut upper, &mut sum_upper);
 
@@ -332,11 +365,17 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
                     let v2 = lower.pop().unwrap();
                     sum_upper += v2.into_inner();
                     upper.push(Reverse(v2));
-                } else { break; }
+                } else {
+                    break;
+                }
             }
         }
 
-        out[a] = if upper.is_empty() { f64::NAN } else { sum_upper / (upper.len() as f64) };
+        out[a] = if upper.is_empty() {
+            f64::NAN
+        } else {
+            sum_upper / (upper.len() as f64)
+        };
     }
 
     out
@@ -366,7 +405,9 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
 fn expanding_ced_sort_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -> Vec<f64> {
     let n = rets.len();
     let mut out = vec![f64::NAN; n];
-    if n < t { return out; }
+    if n < t {
+        return out;
+    }
     let r = if parallel {
         rolling_max_drawdown_core_par(rets, t, t, 1)
     } else {
@@ -376,16 +417,25 @@ fn expanding_ced_sort_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         let end = a - (t - 1) + 1;
         let slice = r[..end].to_vec();
         let q = quantile_linear(slice.clone(), alpha);
-        if q.is_nan() { out[a] = f64::NAN; continue; }
+        if q.is_nan() {
+            out[a] = f64::NAN;
+            continue;
+        }
         let (mut sum, mut cnt) = (0.0, 0usize);
         for &v in &slice {
-            if v >= q { sum += v; cnt += 1; }
+            if v >= q {
+                sum += v;
+                cnt += 1;
+            }
         }
-        out[a] = if cnt == 0 { f64::NAN } else { sum / (cnt as f64) };
+        out[a] = if cnt == 0 {
+            f64::NAN
+        } else {
+            sum / (cnt as f64)
+        };
     }
     out
 }
-
 
 // ---------- Python bindings ----------
 
@@ -421,8 +471,8 @@ fn rolling_max_drawdown(
         }
     });
 
-    let arr = v.into_pyarray(py);        
-    Ok(arr.unbind())   
+    let arr = v.into_pyarray(py);
+    Ok(arr.unbind())
 }
 
 #[pyfunction]
@@ -441,15 +491,26 @@ fn ced(
         } else {
             rolling_max_drawdown_core(rets, t, t, 1)
         };
-        if r.is_empty() { return f64::NAN; }
+        if r.is_empty() {
+            return f64::NAN;
+        }
         let q = quantile_linear(r.clone(), alpha);
-        if q.is_nan() { return f64::NAN; }
+        if q.is_nan() {
+            return f64::NAN;
+        }
         let mut sum = 0.0;
         let mut cnt = 0usize;
         for &v in &r {
-            if v >= q { sum += v; cnt += 1; }
+            if v >= q {
+                sum += v;
+                cnt += 1;
+            }
         }
-        if cnt == 0 { f64::NAN } else { sum / cnt as f64 }
+        if cnt == 0 {
+            f64::NAN
+        } else {
+            sum / cnt as f64
+        }
     });
     Ok(val)
 }
@@ -470,17 +531,80 @@ fn expanding_ced(
         "sort" => expanding_ced_sort_core(rets, t, alpha, parallel),
         _ => expanding_ced_heap_core(rets, t, alpha, parallel),
     });
-    let arr = v.into_pyarray(py);        
-    Ok(arr.unbind())   
+    let arr = v.into_pyarray(py);
+    Ok(arr.unbind())
 }
 
 #[pymodule]
 fn ddstats(_py: Python<'_>, m: &Bound<PyModule>) -> PyResult<()> {
-    m.add("__doc__", "ddstats: drawdown & CED metrics in Rust with NumPy bindings.")?;
-    m.add("__version__", "0.4.0")?;
+    m.add(
+        "__doc__",
+        "ddstats: drawdown & CED metrics in Rust with NumPy bindings.",
+    )?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(max_drawdown, m)?)?;
     m.add_function(wrap_pyfunction!(rolling_max_drawdown, m)?)?;
     m.add_function(wrap_pyfunction!(ced, m)?)?;
     m.add_function(wrap_pyfunction!(expanding_ced, m)?)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_close(a: f64, b: f64, tol: f64) {
+        if a.is_nan() && b.is_nan() {
+            return;
+        }
+        assert!((a - b).abs() <= tol, "{a} vs {b}");
+    }
+
+    #[test]
+    fn max_drawdown_basic_cases() {
+        let mdd = max_drawdown_core(&[0.10, -0.10]);
+        assert_close(mdd, 0.10, 1e-12);
+        let mdd_up = max_drawdown_core(&[0.01, 0.02, 0.03]);
+        assert_close(mdd_up, 0.0, 1e-12);
+        let mdd_empty = max_drawdown_core(&[]);
+        assert!(mdd_empty.is_nan());
+        let mdd_nan = max_drawdown_core(&[0.01, f64::NAN]);
+        assert!(mdd_nan.is_nan());
+    }
+
+    #[test]
+    fn rolling_bounds_example() {
+        let bounds = rolling_bounds(5, 3, 2, 1);
+        assert_eq!(bounds, vec![(0, 2), (0, 3), (1, 4), (2, 5)]);
+    }
+
+    #[test]
+    fn quantile_linear_endpoints() {
+        assert_close(quantile_linear(vec![0.0, 1.0], 0.0), 0.0, 1e-12);
+        assert_close(quantile_linear(vec![0.0, 1.0], 1.0), 1.0, 1e-12);
+        assert_close(quantile_linear(vec![0.0, 1.0], 0.5), 0.5, 1e-12);
+        assert!(quantile_linear(vec![], 0.5).is_nan());
+    }
+
+    #[test]
+    fn rolling_max_drawdown_par_matches_serial() {
+        let rets = [0.01, -0.02, 0.03, -0.01, 0.02];
+        let serial = rolling_max_drawdown_core(&rets, 3, 2, 1);
+        let parallel = rolling_max_drawdown_core_par(&rets, 3, 2, 1);
+        assert_eq!(serial.len(), parallel.len());
+        for (a, b) in serial.iter().zip(parallel.iter()) {
+            assert_close(*a, *b, 1e-12);
+        }
+    }
+
+    #[test]
+    fn expanding_ced_heap_matches_sort() {
+        let rets = [0.01, -0.02, 0.03, -0.01, 0.02];
+        let heap = expanding_ced_heap_core(&rets, 3, 0.9, false);
+        let sort = expanding_ced_sort_core(&rets, 3, 0.9, false);
+        assert_eq!(heap.len(), sort.len());
+        for (a, b) in heap.iter().zip(sort.iter()) {
+            assert_close(*a, *b, 1e-12);
+        }
+    }
 }

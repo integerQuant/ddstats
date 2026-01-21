@@ -4,7 +4,7 @@ Fast drawdown & CED metrics in Rust with NumPy bindings.
 
 ## Overview
 
-`ddstats` provides high-performance financial metrics, including drawdown and Expected Drawdown (CED), implemented in Rust and exposed to Python via NumPy bindings. This allows for fast computations directly from Python, leveraging Rust's speed and safety.
+`ddstats` provides high-performance financial metrics, including drawdown and Conditional Expected Drawdown (CED), implemented in Rust and exposed to Python via NumPy bindings. This allows for fast computations directly from Python, leveraging Rust's speed and safety.
 
 ## Features
 
@@ -49,12 +49,28 @@ Computes the maximum drawdown of a time series.
 
 - **x**: 1D NumPy array of floats.
 
-### `ddstats.ced(x: np.ndarray, level: float) -> float`
+### `ddstats.ced(x: np.ndarray, t: int, alpha: float) -> float`
 
 Computes the Conditional Expected Drawdown at a given confidence level.
 
 - **x**: 1D NumPy array of floats.
-- **level**: Confidence level (e.g., 0.95).
+- **t**: Rolling drawdown distribution window size.
+- **alpha**: Confidence level (between 0 and 1).
+
+## Behavior and edge cases
+
+- Any `NaN` in inputs yields `NaN` in the corresponding output.
+- Empty inputs return `NaN`.
+- Rolling windows honor `min_window` warm-up and `step` stride.
+
+## Testing
+
+```sh
+python -m pip install maturin pytest
+maturin develop
+pytest
+cargo test
+```
 
 ## Building
 
@@ -67,3 +83,8 @@ maturin build
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+## Acknowledgements
+
+Inspired by the work of Lisa R. Goldberg and Ola Mahmoud, Drawdown: From Practice to Theory and Back Again.
+arXiv:1404.7493
