@@ -140,7 +140,7 @@ fn rolling_bounds(n: usize, window: usize, min_window: usize, step: usize) -> Ve
         return Vec::new();
     }
     let max_window_i = n - min_window + 1;
-    let mut bounds = Vec::with_capacity((max_window_i + step - 1) / step);
+    let mut bounds = Vec::with_capacity(max_window_i.div_ceil(step));
     for i in (0..max_window_i).step_by(step) {
         let (i_window, start_i) = if i < window.saturating_sub(min_window) {
             (min_window + i, 0)
@@ -315,7 +315,7 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         }
     };
 
-    for a in (t - 1)..n {
+    for (a, out_a) in out.iter_mut().enumerate().skip(t - 1) {
         let idx = a - (t - 1);
         let len_prefix = idx + 1;
 
@@ -324,7 +324,7 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
             saw_nan = true;
         }
         if saw_nan {
-            out[a] = f64::NAN;
+            *out_a = f64::NAN;
             continue;
         }
 
@@ -333,7 +333,7 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         if upper.is_empty() {
             sum_upper += v;
             upper.push(Reverse(nv));
-        } else if let Some(&Reverse(ref min_top)) = upper.peek() {
+        } else if let Some(Reverse(min_top)) = upper.peek() {
             if v > min_top.into_inner() {
                 let Reverse(th) = upper.pop().unwrap();
                 sum_upper -= th.into_inner();
@@ -358,8 +358,8 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
         rebalance_to_k(k, &mut lower, &mut upper, &mut sum_upper);
 
         // Tie promotion: move all values equal to the upper's min into upper.
-        if let Some(&Reverse(ref min_top)) = upper.peek() {
-            let thr = min_top.clone();
+        if let Some(Reverse(min_top)) = upper.peek() {
+            let thr = *min_top;
             while let Some(max_lower) = lower.peek() {
                 if *max_lower == thr {
                     let v2 = lower.pop().unwrap();
@@ -371,7 +371,7 @@ fn expanding_ced_heap_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
             }
         }
 
-        out[a] = if upper.is_empty() {
+        *out_a = if upper.is_empty() {
             f64::NAN
         } else {
             sum_upper / (upper.len() as f64)
@@ -413,12 +413,12 @@ fn expanding_ced_sort_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
     } else {
         rolling_max_drawdown_core(rets, t, t, 1)
     };
-    for a in (t - 1)..n {
+    for (a, out_a) in out.iter_mut().enumerate().skip(t - 1) {
         let end = a - (t - 1) + 1;
         let slice = r[..end].to_vec();
         let q = quantile_linear(slice.clone(), alpha);
         if q.is_nan() {
-            out[a] = f64::NAN;
+            *out_a = f64::NAN;
             continue;
         }
         let (mut sum, mut cnt) = (0.0, 0usize);
@@ -428,7 +428,7 @@ fn expanding_ced_sort_core(rets: &[f64], t: usize, alpha: f64, parallel: bool) -
                 cnt += 1;
             }
         }
-        out[a] = if cnt == 0 {
+        *out_a = if cnt == 0 {
             f64::NAN
         } else {
             sum / (cnt as f64)
