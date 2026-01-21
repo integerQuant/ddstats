@@ -50,8 +50,11 @@ jobs:
       - name: Rust coverage
         run: cargo tarpaulin --out Xml
 
-      - name: Build Python extension
-        run: maturin develop --release
+      - name: Build Python wheel
+        run: maturin build --release --out dist
+
+      - name: Install Python wheel
+        run: python -m pip install --force-reinstall dist/*.whl
 
       - name: Python tests
         run: pytest --cov=ddstats --cov-report=xml
