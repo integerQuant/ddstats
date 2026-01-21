@@ -20,6 +20,12 @@ dependencies = [
   "numpy>=2.0;  python_version>='3.13'",
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest>=7",
+  "pytest-cov>=4",
+]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 include = ["ddstats.pyi", "py.typed"]

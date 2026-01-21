@@ -1,0 +1,65 @@
+name: ci
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install Python deps
+        shell: bash
+        run: |
+          py="${{ matrix.python-version }}"
+          if [[ "$py" == "3.10" || "$py" == "3.11" || "$py" == "3.12" ]]; then
+            spec="==1.26.*"
+          else
+            spec="==1.24.*"
+          fi
+          python -m pip install --upgrade pip
+          python -m pip install "numpy${spec}" pytest pytest-cov maturin
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin --locked
+
+      - name: Rust fmt
+        run: cargo fmt --check
+
+      - name: Rust clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Rust tests
+        run: cargo test
+
+      - name: Rust coverage
+        run: cargo tarpaulin --out Xml
+
+      - name: Build Python extension
+        run: maturin develop --release
+
+      - name: Python tests
+        run: pytest --cov=ddstats --cov-report=xml
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: |
+            cobertura.xml
+            coverage.xml
